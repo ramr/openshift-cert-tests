@@ -1,0 +1,6 @@
+# Generated files and directories.
+certs/
+index.txt
+private/
+serial
+intermediate/
