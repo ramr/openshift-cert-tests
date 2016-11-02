@@ -1,0 +1,27 @@
+#!/bin/bash
+
+MYDIR=$(cd -P -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source ${MYDIR}/settings.sh
+
+echo "  - Cleaning up old artifacts ..."
+rm -rf certs/ crl/ index.txt  newcerts/ private/ serial intermediate/
+
+echo "  - Initializing directories and files ..."
+mkdir certs crl newcerts private
+chmod 700 private
+touch index.txt
+echo 1000 > serial
+
+echo "  - Generating private key for root ca cert ..."
+openssl genrsa -out private/ca.key.pem ${KEYSIZE}
+chmod 400 private/ca.key.pem
+
+
+echo "  - Generating csr req for root ca cert ..."
+openssl req -config openssl.conf -key private/ca.key.pem \
+            -new -x509 -days ${DAYS} -sha256 -extensions v3_ca \
+            -out certs/ca.cert.pem -subj "${CASUBJECT}"
+chmod 444 certs/ca.cert.pem
+
+echo "  - Verify root ca cert"
+openssl x509 -noout -text -in certs/ca.cert.pem | head && echo "... "
