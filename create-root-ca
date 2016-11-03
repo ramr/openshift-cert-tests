@@ -13,15 +13,17 @@ touch index.txt
 echo 1000 > serial
 
 echo "  - Generating private key for root ca cert ..."
-openssl genrsa -out private/ca.key.pem ${KEYSIZE}
-chmod 400 private/ca.key.pem
+privkey="${MYDIR}/private/ca.key.pem"
+openssl genrsa -out ${privkey} ${KEYSIZE}
+chmod 400 ${privkey}
 
 
 echo "  - Generating csr req for root ca cert ..."
-openssl req -config openssl.conf -key private/ca.key.pem \
-            -new -x509 -days ${DAYS} -sha256 -extensions v3_ca \
-            -out certs/ca.cert.pem -subj "${CASUBJECT}"
-chmod 444 certs/ca.cert.pem
+rootcacert="${MYDIR}/certs/ca.cert.pem"
+openssl req -config openssl.conf -key ${privkey} -new -x509 -days ${DAYS}  \
+            -sha256 -extensions v3_ca -subj "${CASUBJECT}"  \
+	    -out ${rootcacert}
+chmod 444 ${rootcacert}
 
 echo "  - Verify root ca cert"
-openssl x509 -noout -text -in certs/ca.cert.pem | head && echo "... "
+openssl x509 -noout -text -in ${rootcacert} | head && echo "... "

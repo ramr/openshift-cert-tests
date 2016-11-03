@@ -1,0 +1,51 @@
+#!/bin/bash
+
+MYDIR=$(cd -P -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source ${MYDIR}/settings.sh
+
+echo "  - Cleaning old intermediate artifacts ... "
+rm -rf intermediate/
+
+mkdir -p intermediate
+cp intermediate.openssl.conf intermediate/openssl.conf
+
+pushd .
+cd intermediate
+mkdir certs crl csr newcerts private
+chmod 700 private
+touch index.txt
+echo 1000 > serial
+echo 1000 > crlnumber
+
+echo "  - Generating private key for intermediate ca cert ..."
+privkey="${MYDIR}/intermediate/private/intermediate.key.pem"
+openssl genrsa -out ${privkey} ${KEYSIZE}
+chmod 400 ${privkey}
+
+echo "  - Generating csr for intermediate ca cert ... "
+csr="${MYDIR}/intermediate/csr/intermediate.csr.pem"
+openssl req -config openssl.conf -new -sha256 -subj "${INTCASUBJECT}"  \
+            -key ${privkey} -out ${csr}
+popd
+
+intermediatecacert="${MYDIR}/intermediate/certs/intermediate.cert.pem"
+echo "  - Generating intermediate ca cert ... "
+echo "y
+y
+" | openssl ca -config openssl.conf -extensions v3_intermediate_ca \
+               -days ${DAYS} -notext -md sha256 \
+               -in ${csr} -out ${intermediatecacert}
+chmod 444 ${intermediatecacert}
+
+
+echo "  - Verify intermediate ca cert ..."
+openssl x509 -noout -text -in ${intermediatecacert} | head
+
+echo "  - Verifying intermediate ca cert against root ca cert..."
+rootcacert="${MYDIR}/certs/ca.cert.pem"
+openssl verify -CAfile ${rootcacert} ${intermediatecacert}
+
+echo "  - Creating certificate chain ..."
+certchain="${MYDIR}/intermediate/certs/ca-chain.cert.pem"
+cat ${intermediatecacert} ${rootcacert} > ${certchain}
+chmod 444 ${certchain}

@@ -1,0 +1,69 @@
+#!/bin/bash
+
+MYDIR=$(cd -P -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source ${MYDIR}/settings.sh
+
+
+#
+#  Generate key, csr and certs (config).
+function _generate_cert_config() {
+  local certcn=${1:-"${CN}"}
+  local subject=${2:-"${SUBJECT}"}
+  local startdate=${3:-""}
+  local enddate=${4:-""}
+
+  local privkey="${MYDIR}/intermediate/private/${certcn}.key.pem"
+  local csr="${MYDIR}/intermediate/private/${certcn}.csr.pem"
+  local cert="${MYDIR}/intermediate/private/${certcn}.cert.pem"
+
+  echo "  - Cleaning up old artificats ..."
+  rm -f ${privkey} ${csr} ${cert}
+
+  pushd .
+  cd intermediate
+
+  echo "  - Generating key for ${certcn} ..."
+  openssl genrsa -out ${privkey} ${KEYSIZE}
+  chmod 400 ${privkey}
+
+  echo "  - Generating certificate request for ${certcn} ..."
+  openssl req -config openssl.conf -key ${privkey} -new -sha256  \
+              -subj "${subject}" -out ${csr}
+
+  local dateopts=""
+  [ -n "${startdate}" ] && dateopts="${dateopts} -startdate ${startdate}"
+  [ -n "${enddate}" ] && dateopts="${dateopts} -enddate ${enddate}"
+
+  echo "  - Generating ${certcn} certificate signed by intermediate CA ..."
+  echo "y
+y
+       " | openssl ca -config openssl.conf -extensions server_cert  \
+                      -days ${DAYS} -notext -md sha256 ${dateopts}  \
+		      -in ${csr} -out ${cert} > /tmp/${certcn}.cert.log 2>&1
+  chmod 444 ${cert}
+
+  echo "  - Verify certificate for ${certcn} ..."
+  openssl x509 -noout -text -in ${cert} | head
+
+  echo "  - Verifying cert for ${certcn} against CA certificate chain ..."
+  cacertchain="${MYDIR}/intermediate/certs/ca-chain.cert.pem"
+  openssl verify -CAfile ${cacertchain} ${cert}
+
+  popd
+
+}  #  End of function  _generate_cert_config.
+
+
+#
+#  _main():
+#
+echo "  - Generating config for CN ${CN} ..."
+_generate_cert_config "${CN}" "${SUBJECT}"
+
+echo "  - Generating config for CN ${EXPIREDCN} ..."
+past="19900228101030Z"
+expired="20000227101112Z"
+_generate_cert_config "${EXPIREDCN}" "${EXPIREDSUBJECT}" "${past}" "${expired}"
+
+echo "  - Generating config for CN ${FUTUREVALIDCN} ..."
+_generate_cert_config "${FUTUREVALIDCN}" "${FUTUREVALIDSUBJECT}" "20360228101030Z"
