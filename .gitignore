@@ -1,6 +1,10 @@
 # Generated files and directories.
 certs/
 index.txt
+index.txt.attr
+index.txt.old
+intermediate/
+newcerts/
 private/
 serial
-intermediate/
+serial.old

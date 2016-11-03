@@ -41,6 +41,7 @@ y
                       -days ${DAYS} -notext -md sha256 ${dateopts}  \
 		      -in ${csr} -out ${cert} > /tmp/${certcn}.cert.log 2>&1
   chmod 444 ${cert}
+  popd
 
   echo "  - Verify certificate for ${certcn} ..."
   openssl x509 -noout -text -in ${cert} | head
@@ -49,7 +50,7 @@ y
   cacertchain="${MYDIR}/intermediate/certs/ca-chain.cert.pem"
   openssl verify -CAfile ${cacertchain} ${cert}
 
-  popd
+  echo ""
 
 }  #  End of function  _generate_cert_config.
 
@@ -67,3 +68,5 @@ _generate_cert_config "${EXPIREDCN}" "${EXPIREDSUBJECT}" "${past}" "${expired}"
 
 echo "  - Generating config for CN ${FUTUREVALIDCN} ..."
 _generate_cert_config "${FUTUREVALIDCN}" "${FUTUREVALIDSUBJECT}" "20360228101030Z"
+
+echo ""

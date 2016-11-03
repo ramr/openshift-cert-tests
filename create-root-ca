@@ -22,8 +22,10 @@ echo "  - Generating csr req for root ca cert ..."
 rootcacert="${MYDIR}/certs/ca.cert.pem"
 openssl req -config openssl.conf -key ${privkey} -new -x509 -days ${DAYS}  \
             -sha256 -extensions v3_ca -subj "${CASUBJECT}"  \
-	    -out ${rootcacert}
+	    -out ${rootcacert} > /tmp/root.ca.log 2>&1
 chmod 444 ${rootcacert}
 
 echo "  - Verify root ca cert"
 openssl x509 -noout -text -in ${rootcacert} | head && echo "... "
+
+echo ""

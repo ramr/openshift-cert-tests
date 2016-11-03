@@ -32,9 +32,9 @@ intermediatecacert="${MYDIR}/intermediate/certs/intermediate.cert.pem"
 echo "  - Generating intermediate ca cert ... "
 echo "y
 y
-" | openssl ca -config openssl.conf -extensions v3_intermediate_ca \
-               -days ${DAYS} -notext -md sha256 \
-               -in ${csr} -out ${intermediatecacert}
+" | openssl ca -config openssl.conf -extensions v3_intermediate_ca  \
+               -days ${DAYS} -notext -md sha256 -in ${csr}          \
+	       -out ${intermediatecacert}  > /tmp/intermediate.ca.log 2>&1
 chmod 444 ${intermediatecacert}
 
 
@@ -49,3 +49,5 @@ echo "  - Creating certificate chain ..."
 certchain="${MYDIR}/intermediate/certs/ca-chain.cert.pem"
 cat ${intermediatecacert} ${rootcacert} > ${certchain}
 chmod 444 ${certchain}
+
+echo ""
